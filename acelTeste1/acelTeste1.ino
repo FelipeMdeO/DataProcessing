@@ -31,7 +31,7 @@ unsigned int time_pass = 0;
 double v_mean_y[7];
 double ax2, ay2;
 double fx_mean, fy_mean, fz_mean;
-double y_f[2], x_f[2], vel_x[2], vel_y[2];
+double y_f[2], x_f[2], vel_x[2], vel_y[2], pos_y[2];
 
 int my_direction = 0;
 bool can_calc_my_direction = true;
@@ -72,6 +72,8 @@ void setup() {
   vel_x[1] = 0;
   vel_y[0] = 0;
   vel_y[1] = 0;
+  pos_y[0] = 0;
+  pos_y[1] = 0;
   v_mean_y[0] = 0;
   v_mean_y[1] = 0;
   v_mean_y[2] = 0;
@@ -132,12 +134,16 @@ void loop() {
       vel_y[1] = vel_y[0] + (0.1) * (y_f[1] + y_f[0]) / 2.0;
       //vel_x[1] = vel_x[0] + (0.1) * (x_f[1] + x_f[0]) / 2.0;
 
+      /* Seconde Integral Calculation */
+      pos_y[1] = pos_y[0] + (0.1)* (vel_y[1] + vel_y[0]) / 2.0;
+
       y_f[0] = y_f[1]; // Atualizacao dos valores de aceleracao em Y
       //x_f[0] = x_f[1]; // Atualizacao dos valores de aceleracao em X
 
       vel_y[0] = vel_y[1]; // Atualizacao dos valores de velocidade em Y
       //vel_x[0] = vel_x[1]; // Atualizacao dos valores de velocidade em X
 
+      pos_y[0] = pos_y[1]; // Atualizacao dos valores de posicao em Y
       v_mean_y[7] = vel_y[1]; // Atribuicao de velocidade corrente ao vetor de media movel
 
       // so a partir da terceira iteracao faco a media movel
@@ -188,9 +194,8 @@ void loop() {
         }
       }
 
-      //Serial.print(ay2); Serial.print("\t"); 
-      Serial.println(v_mean_y[6]);
-      
+      Serial.print(vel_y[1]); Serial.print("\t"); Serial.print(v_mean_y[6]);
+      Serial.print("\t"); Serial.print(vel_y[1]), Serial.print("\t"); Serial.println(pos_y[1]);      
       lastTime = millis();
       time_pass++; //atualizacao do tempo da iteracao
     }
@@ -208,6 +213,8 @@ void loop() {
   vel_x[1] = 0;
   vel_y[0] = 0;
   vel_y[1] = 0;
+  pos_y[0] = 0;
+  pos_y[1] = 0;
   v_mean_y[0] = 0;
   v_mean_y[1] = 0;
   v_mean_y[2] = 0;
