@@ -8,7 +8,9 @@
 
 #define SAMPLE_TIME 10       // Tempo entre leituras de 10 ms
 #define STOP_TIME 1000       // Tempo entre leituras de 1000 ms
-#define DT_THRESHOULD 30
+#define DT_THRESHOULD 500
+#define N_SAMPLES 40        // Numero de amostras para identificar que saiu da boca do tanque
+#define ACEL_THRESHOULD 65 // Limiar de aceleracao em mg
 
 #define LED_PIN 13
 #define INTERRUPT_PIN 2
@@ -37,11 +39,13 @@ int my_direction = 0;
 bool can_calc_my_direction = true;
 bool last_time_put = false;
 
+unsigned short int count_threshould = 0;
 unsigned long lastTime;
 unsigned long tempo_inv_now;
 unsigned long tempo_inv_last;
 unsigned long timeChange;
 unsigned long now;
+unsigned long t_threshould = 0;
 
 void setup() {
   // join I2C bus (I2Cdev library doesn't do this automatically)
@@ -124,18 +128,31 @@ void loop() {
       //x_f[1] = 0.8819 * x_f[0] + 0.1181 * ax2;
       //x[0] = x[1];
 
+      if ((y_f[1] >= ACEL_THRESHOULD/1000.0) || (y_f[1] < -ACEL_THRESHOULD/1000.0)) {
+        count_threshould++;
+      } 
+      else {
+        count_threshould = 0;
+      }
+
+      if (count_threshould >= N_SAMPLES) {
+        //Serial.println(d);
+        move_identification();
+        while(!digitalRead(INTERRUPT_PIN)); // Travo aqui ate que botao seja soltado para que processo seja reiniciado
+      }
       /* Integral calculation */
       /*
          for i=1:length(x2)-1
            vel(i+1) = vel(i) + dt*(x2(i)+x2(i+1))/2;
          end
       */
-
-      vel_y[1] = vel_y[0] + (0.1) * (y_f[1] + y_f[0]) / 2.0;
+      /*
+      vel_y[1] = vel_y[0] + (0.01) * (y_f[1] + y_f[0]) / 2.0;
       //vel_x[1] = vel_x[0] + (0.1) * (x_f[1] + x_f[0]) / 2.0;
 
       /* Seconde Integral Calculation */
-      pos_y[1] = pos_y[0] + (0.1)* (vel_y[1] + vel_y[0]) / 2.0;
+      /*
+      pos_y[1] = pos_y[0] + (0.01)* (vel_y[1] + vel_y[0]) / 2.0;
 
       y_f[0] = y_f[1]; // Atualizacao dos valores de aceleracao em Y
       //x_f[0] = x_f[1]; // Atualizacao dos valores de aceleracao em X
@@ -193,15 +210,15 @@ void loop() {
           }
         }
       }
-
-      Serial.print(vel_y[1]); Serial.print("\t"); Serial.print(v_mean_y[6]);
-      Serial.print("\t"); Serial.print(vel_y[1]), Serial.print("\t"); Serial.println(pos_y[1]);      
+      */
+      Serial.println(y_f[1]);// Serial.print("\t"); Serial.print(v_mean_y[6]);
+      //Serial.print("\t"); Serial.print(vel_y[1]), Serial.print("\t"); Serial.println(pos_y[1]);      
       lastTime = millis();
       time_pass++; //atualizacao do tempo da iteracao
     }
   }
 
-  if (!digitalRead(CALIBRATION_PIN)) { // Se coloquei o pino pra calibrar isso ocorre
+  if (!digitalRead(CALIBRATION_PIN)) { // Se pressionei o pino pra calibrar isso ocorre
     Calibration();
   }
 
@@ -267,6 +284,7 @@ void Calibration() {
 }
 
 void move_identification() {
+   Serial.println("Move detected! Plx Restart Process");
   /*digitalWrite(LED_PIN, HIGH);
   delay(1000);
   digitalWrite(LED_PIN, LOW);*/
